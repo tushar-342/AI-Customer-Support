@@ -2,6 +2,10 @@
 
 RefundAI is a polished customer-support and operations demo for e-commerce refunds. It combines a Next.js chat experience, an optional OpenAI function call for natural-language intent parsing, and deterministic server-side policy enforcement. The refund demo works without an API key.
 
+## Live Demo
+
+Production: [https://ai-customer-support-ebon.vercel.app/](https://ai-customer-support-ebon.vercel.app/)
+
 ## Features
 
 - Customer-facing chat with account selection, recent-order lookup, quick demo scenarios, loading states, and decision badges.
@@ -113,7 +117,7 @@ npm install
 npm run dev
 ```
 
-Open https://ai-customer-support-ebon.vercel.app/
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Testing and checks
 
