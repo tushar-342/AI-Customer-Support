@@ -50,7 +50,7 @@ flowchart TD
 - `handleChat(request)` — orchestrates intent, retrieval, policy checks, decision, action, and execution events.
 - `GET /api/admin` — dashboard metrics, activity, customers, orders, and refund records.
 
-The demo data store is process memory. It is appropriate for a self-contained interview demonstration; a production deployment would replace it with a durable database and authenticated customer sessions.
+The demo data store is process memory. On a serverless host such as Vercel, separate function instances may not share that memory. The active browser session merges its own chat results into the dashboard so the current demo trace and metrics update, but the data is not durable across browser reloads, cold starts, or redeployments. A production service would use a durable database, authenticated customer sessions, and shared idempotency storage.
 
 ## Refund policy
 
@@ -75,7 +75,7 @@ The demo scenarios are shown as buttons in the live agent preview. Refund record
 
 ## Admin dashboard
 
-The Overview displays live totals, recent conversations, a short policy summary, and a 2.5-second polling feed of the latest agent execution. Events describe verifiable operations, such as customer lookup, policy retrieval, window check, eligibility decision, escalation, and refund processing. The dashboard is a demo operations surface, not an authenticated production admin console.
+The Overview displays live totals, recent conversations, a short policy summary, and a 2.5-second polling feed of the latest agent execution. The active browser session merges chat results into these views to accommodate serverless function isolation. Events describe verifiable operations, such as customer lookup, policy retrieval, window check, eligibility decision, escalation, and refund processing. The dashboard is a demo operations surface, not an authenticated production admin console.
 
 ## Tech stack
 

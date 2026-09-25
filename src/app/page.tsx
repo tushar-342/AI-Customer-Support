@@ -10,6 +10,27 @@ const scenarios = [{ label: "Approve a refund", orderId: "ORD-1001", customerId:
 const initialMessage: ChatMessage = { id: "welcome", role: "assistant", text: "Hi Olivia, I’m here to help with your order. I can check a return, look up an order, or explain our refund policy. What can I help you with?" };
 const timeLabel = (date: string) => new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const currency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(amount);
+function mergeAdminData(incoming: AdminData, current: AdminData | null): AdminData {
+  const conversationMap = new Map((current?.conversations ?? []).map((item) => [item.id, item]));
+  incoming.conversations.forEach((item) => conversationMap.set(item.id, item));
+  const mergedConversations = [...conversationMap.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const refundMap = new Map((current?.refunds ?? []).map((item) => [item.orderId, item]));
+  incoming.refunds.forEach((item) => refundMap.set(item.orderId, item));
+  const mergedRefunds = [...refundMap.values()];
+  return {
+    ...incoming,
+    conversations: mergedConversations,
+    refunds: mergedRefunds,
+    metrics: {
+      totalConversations: mergedConversations.length,
+      refundRequests: mergedConversations.filter((item) => item.orderId && /refund|return|money back/i.test(item.message)).length,
+      approved: mergedConversations.filter((item) => item.decision === "approved").length,
+      denied: mergedConversations.filter((item) => item.decision === "denied").length,
+      escalated: mergedConversations.filter((item) => item.decision === "escalated").length,
+      totalRefundAmount: mergedRefunds.reduce((sum, refund) => sum + refund.amount, 0),
+    },
+  };
+}
 
 export default function Home() {
   const [data, setData] = useState<AdminData | null>(null);
@@ -22,7 +43,7 @@ export default function Home() {
   const [view, setView] = useState("Overview");
 
   const refresh = useCallback(async () => {
-    try { const response = await fetch("/api/admin", { cache: "no-store" }); if (response.ok) setData(await response.json()); }
+    try { const response = await fetch("/api/admin", { cache: "no-store" }); if (response.ok) { const incoming: AdminData = await response.json(); setData((current) => mergeAdminData(incoming, current)); } }
     catch { setToast("Could not refresh dashboard data."); }
   }, []);
   useEffect(() => { void refresh(); const timer = window.setInterval(() => void refresh(), 2500); return () => window.clearInterval(timer); }, [refresh]);
@@ -38,6 +59,13 @@ export default function Home() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "The agent could not process this request.");
       const conversation = result as Conversation; setActiveConversation(conversation);
+      setData((current) => {
+        if (!current) return current;
+        const localRefund = conversation.decision === "approved" && conversation.orderId && conversation.amount !== undefined
+          ? [{ orderId: conversation.orderId, customerId: conversation.customerId, amount: conversation.amount, processedAt: conversation.events.find((item) => item.title === "Refund processed")?.at ?? conversation.createdAt }]
+          : [];
+        return mergeAdminData({ ...current, conversations: [conversation, ...current.conversations], refunds: [...localRefund, ...current.refunds] }, current);
+      });
       setMessages((current) => [...current, { id: conversation.id, role: "assistant", text: conversation.response, decision: conversation.decision, orderId: conversation.orderId }]);
       await refresh();
     } catch (error) {
