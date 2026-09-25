@@ -113,7 +113,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open https://ai-customer-support-ebon.vercel.app/
 
 ## Testing and checks
 
